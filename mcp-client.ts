@@ -25,6 +25,9 @@ export class McpClientPool {
       transport.onclose = () => this.markDisconnected(config.name);
     }
 
+    // Catch MCP-level errors for all transports (e.g. SSE disconnects inside mcp-remote)
+    client.onerror = () => this.markDisconnected(config.name);
+
     this.clients.set(config.name, { config, client, transport, connected: true });
     return client;
   }
@@ -80,7 +83,13 @@ export class McpClientPool {
 
   private isConnectionError(err: unknown): boolean {
     const msg = String(err);
-    return msg.includes("closed") || msg.includes("ECONNREFUSED") || msg.includes("EPIPE");
+    return (
+      msg.includes("closed") ||
+      msg.includes("ECONNREFUSED") ||
+      msg.includes("EPIPE") ||
+      msg.includes("terminated") ||
+      msg.includes("SSE stream disconnected")
+    );
   }
 
   getStatus(serverName: string) {
