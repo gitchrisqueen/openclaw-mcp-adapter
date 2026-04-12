@@ -12,8 +12,23 @@ interface ClientEntry {
 
 export class McpClientPool {
   private clients = new Map<string, ClientEntry>();
+  // Deduplicate concurrent connection attempts for the same server
+  private pending = new Map<string, Promise<Client>>();
 
   async connect(config: ServerConfig): Promise<Client> {
+    const existing = this.pending.get(config.name);
+    if (existing) return existing;
+
+    const promise = this._doConnect(config);
+    this.pending.set(config.name, promise);
+    try {
+      return await promise;
+    } finally {
+      this.pending.delete(config.name);
+    }
+  }
+
+  private async _doConnect(config: ServerConfig): Promise<Client> {
     const client = new Client({ name: "openclaw-mcp-adapter", version: "0.1.0" });
     const transport = this.createTransport(config);
 
@@ -24,6 +39,9 @@ export class McpClientPool {
       transport.onerror = () => this.markDisconnected(config.name);
       transport.onclose = () => this.markDisconnected(config.name);
     }
+
+    // Catch MCP-level errors for all transports (e.g. SSE disconnects inside mcp-remote)
+    client.onerror = () => this.markDisconnected(config.name);
 
     this.clients.set(config.name, { config, client, transport, connected: true });
     return client;
@@ -80,7 +98,13 @@ export class McpClientPool {
 
   private isConnectionError(err: unknown): boolean {
     const msg = String(err);
-    return msg.includes("closed") || msg.includes("ECONNREFUSED") || msg.includes("EPIPE");
+    return (
+      msg.includes("closed") ||
+      msg.includes("ECONNREFUSED") ||
+      msg.includes("EPIPE") ||
+      msg.includes("terminated") ||
+      msg.includes("SSE stream disconnected")
+    );
   }
 
   getStatus(serverName: string) {

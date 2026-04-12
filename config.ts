@@ -6,6 +6,10 @@ export interface ServerConfig {
   env?: Record<string, string>;
   url?: string;
   headers?: Record<string, string>;
+  /** Whitelist: only expose tools whose names appear in this list. If omitted, all tools are exposed. */
+  allowTools?: string[];
+  /** Blacklist: never expose tools whose names appear in this list. Applied after allowTools. */
+  denyTools?: string[];
 }
 
 export interface McpAdapterConfig {
@@ -41,6 +45,8 @@ export function parseConfig(raw: unknown): McpAdapterConfig {
       env: srv.env ? interpolateEnv(srv.env as Record<string, string>) : undefined,
       url: srv.url as string | undefined,
       headers: srv.headers ? interpolateEnv(srv.headers as Record<string, string>) : undefined,
+      allowTools: srv.allowTools as string[] | undefined,
+      denyTools: srv.denyTools as string[] | undefined,
     });
   }
 
