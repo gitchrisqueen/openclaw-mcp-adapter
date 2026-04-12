@@ -12,8 +12,23 @@ interface ClientEntry {
 
 export class McpClientPool {
   private clients = new Map<string, ClientEntry>();
+  // Deduplicate concurrent connection attempts for the same server
+  private pending = new Map<string, Promise<Client>>();
 
   async connect(config: ServerConfig): Promise<Client> {
+    const existing = this.pending.get(config.name);
+    if (existing) return existing;
+
+    const promise = this._doConnect(config);
+    this.pending.set(config.name, promise);
+    try {
+      return await promise;
+    } finally {
+      this.pending.delete(config.name);
+    }
+  }
+
+  private async _doConnect(config: ServerConfig): Promise<Client> {
     const client = new Client({ name: "openclaw-mcp-adapter", version: "0.1.0" });
     const transport = this.createTransport(config);
 
