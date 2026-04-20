@@ -99,7 +99,15 @@ export default function (api: any) {
       // Brief startup pause so local stdio-based MCP services can warm up
       await new Promise(r => setTimeout(r, 3000));
 
-      const newCacheTools: CachedTool[] = [];
+      const cachedToolsByServer = new Map<string, CachedTool[]>();
+      if (cache) {
+        for (const tool of cache.tools) {
+          const existing = cachedToolsByServer.get(tool.serverName) ?? [];
+          existing.push(tool);
+          cachedToolsByServer.set(tool.serverName, existing);
+        }
+      }
+      const refreshedToolsByServer = new Map<string, CachedTool[]>();
 
       for (const server of config.servers) {
         let connected = false;
@@ -120,12 +128,18 @@ export default function (api: any) {
         }
         if (!connected) {
           console.error(`[mcp-adapter] Failed to connect to ${server.name}:`, lastErr);
+          const cachedServerTools = cachedToolsByServer.get(server.name);
+          if (cachedServerTools && cachedServerTools.length > 0) {
+            refreshedToolsByServer.set(server.name, cachedServerTools);
+            console.log(`[mcp-adapter] Preserving ${cachedServerTools.length} cached tools for ${server.name}`);
+          }
           continue;
         }
 
         try {
           const tools = await pool.listTools(server.name);
           console.log(`[mcp-adapter] ${server.name}: found ${tools.length} tools`);
+          const newCacheTools: CachedTool[] = [];
 
           const filteredTools = tools.filter((tool) => {
             const n = tool.name;
@@ -160,22 +174,30 @@ export default function (api: any) {
               inputSchema: tool.inputSchema ?? { type: "object", properties: {} },
             });
           }
+          refreshedToolsByServer.set(server.name, newCacheTools);
         } catch (err) {
           console.error(`[mcp-adapter] Failed to list/register tools for ${server.name}:`, err);
+          const cachedServerTools = cachedToolsByServer.get(server.name);
+          if (cachedServerTools && cachedServerTools.length > 0) {
+            refreshedToolsByServer.set(server.name, cachedServerTools);
+            console.log(`[mcp-adapter] Preserving ${cachedServerTools.length} cached tools for ${server.name}`);
+          }
         }
       }
 
+      const mergedCacheTools = config.servers.flatMap((server) => refreshedToolsByServer.get(server.name) ?? []);
+
       // Write updated cache so next fresh-load gets current tool manifest
-      if (newCacheTools.length > 0) {
+      if (mergedCacheTools.length > 0) {
         try {
           const cache: ToolCache = {
             timestamp: new Date().toISOString(),
             servers: config.servers,
             toolPrefix: config.toolPrefix,
-            tools: newCacheTools,
+            tools: mergedCacheTools,
           };
           writeFileSync(CACHE_FILE, JSON.stringify(cache, null, 2));
-          console.log(`[mcp-adapter] Cache updated: ${newCacheTools.length} tools written to ${CACHE_FILE}`);
+          console.log(`[mcp-adapter] Cache updated: ${mergedCacheTools.length} tools written to ${CACHE_FILE}`);
         } catch (err) {
           console.error("[mcp-adapter] Failed to write tool cache:", err);
         }
