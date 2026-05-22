@@ -256,6 +256,23 @@ export default function (api: any) {
         refreshPromise = null;
       });
       console.log(`[mcp-adapter] Background refresh scheduled for ${config.servers.length} server(s)`);
+
+      // Periodic refresh every 30 minutes so agents always see current tool signatures
+      const REFRESH_INTERVAL_MS = 30 * 60 * 1000;
+      const periodicRefresh = setInterval(() => {
+        if (stopping) {
+          clearInterval(periodicRefresh);
+          return;
+        }
+        if (refreshPromise) return; // previous refresh still running
+        refreshPromise = refreshToolCache().catch((err) => {
+          console.warn("[mcp-adapter] Periodic refresh failed:", err);
+        }).finally(() => {
+          refreshPromise = null;
+        });
+      }, REFRESH_INTERVAL_MS);
+      // Unref so the interval doesn't prevent process exit
+      if (periodicRefresh.unref) periodicRefresh.unref();
     },
 
     async stop() {

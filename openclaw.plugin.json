@@ -11,7 +11,9 @@
         "description": "List of MCP servers to connect to",
         "items": {
           "type": "object",
-          "required": ["name"],
+          "required": [
+            "name"
+          ],
           "properties": {
             "name": {
               "type": "string",
@@ -19,7 +21,10 @@
             },
             "transport": {
               "type": "string",
-              "enum": ["stdio", "http"],
+              "enum": [
+                "stdio",
+                "http"
+              ],
               "default": "stdio",
               "description": "Connection type"
             },
@@ -29,12 +34,16 @@
             },
             "args": {
               "type": "array",
-              "items": { "type": "string" },
+              "items": {
+                "type": "string"
+              },
               "description": "For stdio: command arguments"
             },
             "env": {
               "type": "object",
-              "additionalProperties": { "type": "string" },
+              "additionalProperties": {
+                "type": "string"
+              },
               "description": "Environment variables (supports ${VAR} interpolation)"
             },
             "url": {
@@ -43,7 +52,9 @@
             },
             "headers": {
               "type": "object",
-              "additionalProperties": { "type": "string" },
+              "additionalProperties": {
+                "type": "string"
+              },
               "description": "For http: request headers (supports ${VAR} interpolation)"
             }
           }
@@ -59,10 +70,23 @@
   "contracts": {
     "tools": [
       "clickup_add_task_tag",
+      "clickup_add_task_watcher",
+      "clickup_create_checklist",
+      "clickup_create_checklist_item",
       "clickup_create_comment",
+      "clickup_create_folder",
       "clickup_create_list",
+      "clickup_create_space",
       "clickup_create_task",
+      "clickup_create_time_entry",
+      "clickup_delete_checklist",
+      "clickup_delete_checklist_item",
+      "clickup_delete_comment",
+      "clickup_delete_folder",
+      "clickup_delete_list",
+      "clickup_delete_space",
       "clickup_delete_task",
+      "clickup_delete_time_entry",
       "clickup_get_accessible_custom_fields",
       "clickup_get_comments",
       "clickup_get_custom_fields",
@@ -77,11 +101,20 @@
       "clickup_get_task",
       "clickup_get_task_members",
       "clickup_get_teams",
+      "clickup_get_time_entries",
+      "clickup_get_views",
       "clickup_get_workspace",
       "clickup_get_workspace_members",
       "clickup_get_workspace_tasks",
       "clickup_remove_task_tag",
+      "clickup_remove_task_watcher",
       "clickup_set_custom_field",
+      "clickup_update_checklist",
+      "clickup_update_checklist_item",
+      "clickup_update_comment",
+      "clickup_update_folder",
+      "clickup_update_list",
+      "clickup_update_space",
       "clickup_update_task",
       "google-workspace-business_draft_gmail_message",
       "google-workspace-business_get_events",
