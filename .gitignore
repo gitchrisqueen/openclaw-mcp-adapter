@@ -3,3 +3,7 @@ node_modules/
 .DS_Store
 CLAUDE.md
 PRD.md
+
+# Runtime caches written by the adapter at startup (regenerated, never reviewed)
+status-cache.json
+tool-cache.json
