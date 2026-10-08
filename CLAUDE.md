@@ -35,8 +35,7 @@ openclaw plugins list                  # expect: MCP Adapter | mcp-adapter | loa
 ```
 
 Then invoke one of the registered tools from an agent and check the gateway log for
-`[mcp-adapter]` lines. A quick syntax check without OpenClaw: `npx tsc --noEmit --module nodenext
---target es2022 --moduleResolution nodenext *.ts` (expect `any`-typed API warnings only).
+`[mcp-adapter]` lines.
 
 ## Conventions
 
@@ -45,3 +44,5 @@ Then invoke one of the registered tools from an agent and check the gateway log 
 - Config changes go in three places together: `config.ts` (`ServerConfig`, `parseConfig`),
   `openclaw.plugin.json` (`configSchema`), and the README tables.
 - Never commit secrets. Use `${VAR}` references resolved from the gateway environment.
+- `tool-cache.json` is written next to `index.ts` and stores the parsed server config, including
+  `env`/`headers` values after `${VAR}` interpolation. It is git-ignored; never commit it.
